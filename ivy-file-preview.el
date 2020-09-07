@@ -57,6 +57,9 @@
 (defvar ivy-file-preview--selected-file ""
   "Record down the current selected file.")
 
+(defvar ivy-file-preview--window-status '()
+  "Record windows status for when canceling command.")
+
 ;;; Util
 
 (defun ivy-file-preview--project-path ()
@@ -102,12 +105,28 @@ PROJECT-DIR represents the path of the project root directory."
             cl (string-to-number cl))
       (ivy-file-preview--do-preview fn ln cl project-dir))))
 
+(defun ivy-file-preview--cancel-revert ()
+  "Revert frame status if user cancel the commands."
+  (unless ivy-exit
+    (switch-to-buffer (pop ivy-file-preview--window-status))
+    (ivy-file-preview--goto-line (pop ivy-file-preview--window-status))
+    (move-to-column (pop ivy-file-preview--window-status))))
+
+(defun ivy-file-preview--enter ()
+  "Execution after minibuffer setup."
+  (setq ivy-file-preview--window-status '())
+  (with-selected-window minibuffer-scroll-window
+    (push (current-column) ivy-file-preview--window-status)
+    (push (line-number-at-pos) ivy-file-preview--window-status)
+    (push (buffer-name) ivy-file-preview--window-status)))
+
 (defun ivy-file-preview--exit ()
   "Execution before minibuffer exits."
   (delete-dups ivy-file-preview--preview-files)
   (dolist (fn ivy-file-preview--preview-files)
     (unless (string= ivy-file-preview--selected-file fn)
       (kill-buffer (f-filename fn))))
+  (ivy-file-preview--cancel-revert)  ; If already empty, revert it.
   (setq ivy-file-preview--selected-file "")
   (setq ivy-file-preview--preview-files '()))
 
@@ -115,11 +134,13 @@ PROJECT-DIR represents the path of the project root directory."
 
 (defun ivy-file-preview--enable ()
   "Enable `ivy-file-preview'."
+  (add-hook 'minibuffer-setup-hook #'ivy-file-preview--enter)
   (add-hook 'minibuffer-exit-hook #'ivy-file-preview--exit)
   (advice-add 'ivy--exhibit :after #'ivy-file-preview--after-select))
 
 (defun ivy-file-preview--disable ()
   "Disable `ivy-file-preview'."
+  (remove-hook 'minibuffer-setup-hook #'ivy-file-preview--enter)
   (remove-hook 'minibuffer-exit-hook #'ivy-file-preview--exit)
   (advice-remove 'ivy--exhibit #'ivy-file-preview--after-select))
 
