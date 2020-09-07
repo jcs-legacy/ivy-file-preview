@@ -9,7 +9,7 @@
 Call the following command to enable it.
 
 ```
-M-x ivy-file-preivew-mode
+M-x ivy-file-preview-mode
 ```
 
 ## Contribution
