@@ -1,0 +1,9 @@
+# ignore these directories.
+/.git
+/recipes
+/test
+ivy-file-preview-pkg.el
+ivy-file-preview-autoloads.el
+
+# ignore generated files.
+*.elc
