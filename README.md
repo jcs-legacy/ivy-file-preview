@@ -4,6 +4,14 @@
 # ivy-file-preview
 > Preview the current ivy file selection.
 
+## Usage
+
+Call the following command to enable it.
+
+```
+M-x ivy-file-preivew-mode
+```
+
 ## Contribution
 
 If you would like to contribute to this project, you may either
