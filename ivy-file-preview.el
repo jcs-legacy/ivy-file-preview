@@ -7,7 +7,7 @@
 ;; Description: Preview the current ivy file selection.
 ;; Keyword: file ivy swiper preview select selection
 ;; Version: 0.0.1
-;; Package-Requires: ((emacs "24.3") (ivy "0.8.0"))
+;; Package-Requires: ((emacs "25.1") (ivy "0.8.0") (f "0.20.0"))
 ;; URL: https://github.com/jcs090218/ivy-file-preview
 
 ;; This file is NOT part of GNU Emacs.
@@ -32,6 +32,7 @@
 
 ;;; Code:
 
+(require 'f)
 (require 'ivy)
 
 (defgroup ivy-file-preview nil
@@ -40,13 +41,87 @@
   :group 'tool
   :link '(url-link :tag "Repository" "https://github.com/jcs-elpa/ivy-file-preview"))
 
+(defcustom ivy-file-preview-preview-only t
+  "Preview the file instead of actually opens the file."
+  :type 'boolean
+  :group 'ivy-file-preview)
+
+(defcustom ivy-file-preview-details t
+  "Preview file only when there are more details in the selection."
+  :type 'boolean
+  :group 'ivy-file-preview)
+
+(defvar ivy-file-preview--preview-files '()
+  "Files that are previewing, and will be closed after action is done.")
+
+(defvar ivy-file-preview--selected-file ""
+  "Record down the current selected file.")
+
+;;; Util
+
+(defun ivy-file-preview--project-path ()
+  "Get current project path."
+  (cdr (project-current)))
+
+(defun ivy-file-preview--goto-line (ln)
+  "Goto LN line number."
+  (goto-char (point-min))
+  (forward-line (1- ln)))
+
+;;; Core
+
+(defun ivy-file-preview--open-file (fn ln cl)
+  "Open the file (FN), line number (LN), and column (CL)."
+  (setq ivy-file-preview--selected-file fn)
+  (find-file fn)
+  (ivy-file-preview--goto-line ln)
+  (move-to-column cl))
+
+(defun ivy-file-preview--do-preview (fn ln cl project-dir)
+  "Do file preview execution.
+FN represents file path.  LN represents line numbers.  CL represents columns.
+PROJECT-DIR represents the path of the project root directory."
+  (save-selected-window
+    (with-selected-window minibuffer-scroll-window
+      (when project-dir (setq fn (f-join project-dir fn)))
+      (when (and ivy-file-preview-preview-only (not (find-buffer-visiting fn)))
+        (push fn ivy-file-preview--preview-files))
+      (ivy-file-preview--open-file fn ln cl))))
+
+(defun ivy-file-preview--after-select (&rest _)
+  "Execution after selection."
+  (let* ((project-dir (ivy-file-preview--project-path))
+         (cands (or ivy--old-cands ivy--all-candidates '()))
+         (current-selection (or (nth ivy--index cands) ""))
+         (sel-lst (split-string current-selection ":"))
+         fn ln cl)
+    (when (< 2 (length sel-lst))
+      (setq fn (nth 0 sel-lst) ln (nth 1 sel-lst) cl (nth 2 sel-lst)))
+    (when (and ivy-file-preview-details ln cl)
+      (setq ln (string-to-number ln)
+            cl (string-to-number cl))
+      (ivy-file-preview--do-preview fn ln cl project-dir))))
+
+(defun ivy-file-preview--exit ()
+  "Execution before minibuffer exits."
+  (delete-dups ivy-file-preview--preview-files)
+  (dolist (fn ivy-file-preview--preview-files)
+    (unless (string= ivy-file-preview--selected-file fn)
+      (kill-buffer (f-filename fn))))
+  (setq ivy-file-preview--selected-file "")
+  (setq ivy-file-preview--preview-files '()))
+
+;;; Entry
+
 (defun ivy-file-preview--enable ()
   "Enable `ivy-file-preview'."
-  )
+  (add-hook 'minibuffer-exit-hook #'ivy-file-preview--exit)
+  (advice-add 'ivy--exhibit :after #'ivy-file-preview--after-select))
 
 (defun ivy-file-preview--disable ()
   "Disable `ivy-file-preview'."
-  )
+  (remove-hook 'minibuffer-exit-hook #'ivy-file-preview--exit)
+  (advice-remove 'ivy--exhibit #'ivy-file-preview--after-select))
 
 ;;;###autoload
 (define-minor-mode ivy-file-preview-mode
