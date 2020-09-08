@@ -114,15 +114,13 @@ POS can either be an integer or cons cell represent line number and columns."
   "Revert frame status if user cancel the commands."
   (unless ivy-exit
     (switch-to-buffer (pop ivy-file-preview--window-status))
-    (ivy-file-preview--goto-line (pop ivy-file-preview--window-status))
-    (move-to-column (pop ivy-file-preview--window-status))))
+    (set-window-point minibuffer-scroll-window (pop ivy-file-preview--window-status))))
 
 (defun ivy-file-preview--enter ()
   "Execution after minibuffer setup."
   (setq ivy-file-preview--window-status '())
   (with-selected-window minibuffer-scroll-window
-    (push (current-column) ivy-file-preview--window-status)
-    (push (line-number-at-pos) ivy-file-preview--window-status)
+    (push (window-point) ivy-file-preview--window-status)
     (push (buffer-name) ivy-file-preview--window-status)))
 
 (defun ivy-file-preview--exit ()
