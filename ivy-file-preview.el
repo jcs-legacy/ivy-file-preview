@@ -76,7 +76,7 @@
 
 (defun ivy-file-preview--open-file (fn pos)
   "Open the file path (FN).
-POS can either be a integer or cons cell represent line number and columns."
+POS can either be an integer or cons cell represent line number and columns."
   (setq ivy-file-preview--selected-file fn)
   (find-file fn)
   (cond ((consp pos)
@@ -88,7 +88,7 @@ POS can either be a integer or cons cell represent line number and columns."
 (defun ivy-file-preview--do-preview (project-dir fn pos)
   "Do file preview execution.
 FN is the file path.  PROJECT-DIR is the path of the project root directory.
-POS can either be a integer or cons cell represent line number and columns."
+POS can either be an integer or cons cell represent line number and columns."
   (save-selected-window
     (with-selected-window minibuffer-scroll-window
       (when project-dir (setq fn (f-join project-dir fn)))
