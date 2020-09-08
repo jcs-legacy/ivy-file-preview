@@ -32,6 +32,7 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'f)
 (require 'ivy)
 
@@ -73,23 +74,27 @@
 
 ;;; Core
 
-(defun ivy-file-preview--open-file (fn ln cl)
-  "Open the file (FN), line number (LN), and column (CL)."
+(defun ivy-file-preview--open-file (fn pos)
+  "Open the file path (FN).
+POS can either be a integer or cons cell represent line number and columns."
   (setq ivy-file-preview--selected-file fn)
   (find-file fn)
-  (ivy-file-preview--goto-line ln)
-  (move-to-column cl))
+  (cond ((consp pos)
+         (ivy-file-preview--goto-line (car pos))
+         (move-to-column (cdr pos)))
+        ((integerp pos) (goto-char (1+ pos)))
+        (t (error "Undefined pos details: %s" pos))))
 
-(defun ivy-file-preview--do-preview (fn ln cl project-dir)
+(defun ivy-file-preview--do-preview (project-dir fn pos)
   "Do file preview execution.
-FN represents file path.  LN represents line numbers.  CL represents columns.
-PROJECT-DIR represents the path of the project root directory."
+FN is the file path.  PROJECT-DIR is the path of the project root directory.
+POS can either be a integer or cons cell represent line number and columns."
   (save-selected-window
     (with-selected-window minibuffer-scroll-window
       (when project-dir (setq fn (f-join project-dir fn)))
       (when (and ivy-file-preview-preview-only (not (find-buffer-visiting fn)))
         (push fn ivy-file-preview--preview-files))
-      (ivy-file-preview--open-file fn ln cl))))
+      (ivy-file-preview--open-file fn pos))))
 
 (defun ivy-file-preview--after-select (&rest _)
   "Execution after selection."
@@ -100,10 +105,10 @@ PROJECT-DIR represents the path of the project root directory."
          fn ln cl)
     (when (< 2 (length sel-lst))
       (setq fn (nth 0 sel-lst) ln (nth 1 sel-lst) cl (nth 2 sel-lst)))
-    (when (and ivy-file-preview-details ln cl)
+    (when (and ivy-file-preview-details ln)
       (setq ln (string-to-number ln)
-            cl (string-to-number cl))
-      (ivy-file-preview--do-preview fn ln cl project-dir))))
+            cl (ignore-errors (cl-parse-integer cl)))
+      (ivy-file-preview--do-preview project-dir fn (if cl (cons ln cl) ln)))))
 
 (defun ivy-file-preview--cancel-revert ()
   "Revert frame status if user cancel the commands."
