@@ -4,6 +4,10 @@
 # ivy-file-preview
 > Preview the current ivy file selection.
 
+<p align="center">
+  <img src="./etc/demo.gif" width="600" height="691"/>
+</p>
+
 ## Usage
 
 Call the following command to enable it.
