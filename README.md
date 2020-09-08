@@ -5,7 +5,7 @@
 > Preview the current ivy file selection.
 
 <p align="center">
-  <img src="./etc/demo.gif" width="600" height="691"/>
+  <img src="./etc/demo.gif" width="400" height="460"/>
 </p>
 
 ## Usage
