@@ -78,7 +78,7 @@
   "Open the file path (FN).
 POS can either be an integer or cons cell represent line number and columns."
   (setq ivy-file-preview--selected-file fn)
-  (find-file fn)
+  (if (file-exists-p fn) (find-file fn) (switch-to-buffer fn))
   (cond ((consp pos)
          (ivy-file-preview--goto-line (car pos))
          (move-to-column (cdr pos)))
