@@ -8,7 +8,7 @@
 ;; Keyword: file ivy swiper preview select selection
 ;; Version: 0.1.4
 ;; Package-Requires: ((emacs "25.1") (ivy "0.8.0") (f "0.20.0"))
-;; URL: https://github.com/jcs090218/ivy-file-preview
+;; URL: https://github.com/jcs-elpa/ivy-file-preview
 
 ;; This file is NOT part of GNU Emacs.
 
