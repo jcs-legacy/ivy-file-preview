@@ -6,7 +6,7 @@
 ;; Author: Shen, Jen-Chieh <jcs090218@gmail.com>
 ;; Description: Preview the current ivy file selection.
 ;; Keyword: file ivy swiper preview select selection
-;; Version: 0.1.3
+;; Version: 0.1.4
 ;; Package-Requires: ((emacs "25.1") (ivy "0.8.0") (f "0.20.0"))
 ;; URL: https://github.com/jcs090218/ivy-file-preview
 
