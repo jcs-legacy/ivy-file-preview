@@ -77,13 +77,12 @@
 (defun ivy-file-preview--open-file (fn pos)
   "Open the file path (FN).
 POS can either be an integer or cons cell represent line number and columns."
-  (setq ivy-file-preview--selected-file fn)
   (if (file-exists-p fn) (find-file fn) (switch-to-buffer fn))
   (cond ((consp pos)
          (ivy-file-preview--goto-line (car pos))
          (move-to-column (cdr pos)))
         ((integerp pos) (goto-char (1+ pos)))
-        (t (error "Undefined pos details: %s" pos))))
+        (t (error "Undefined position details: %s" pos))))
 
 (defun ivy-file-preview--do-preview (project-dir fn pos)
   "Do file preview execution.
@@ -112,9 +111,10 @@ POS can either be an integer or cons cell represent line number and columns."
 
 (defun ivy-file-preview--cancel-revert ()
   "Revert frame status if user cancel the commands."
-  (unless ivy-exit
-    (switch-to-buffer (pop ivy-file-preview--window-status))
-    (set-window-point minibuffer-scroll-window (pop ivy-file-preview--window-status))))
+  (if ivy-exit
+      (setq ivy-file-preview--selected-file "")
+    (switch-to-buffer (nth 0 ivy-file-preview--window-status))
+    (set-window-point minibuffer-scroll-window (nth 1 ivy-file-preview--window-status))))
 
 (defun ivy-file-preview--enter ()
   "Execution after minibuffer setup."
@@ -125,11 +125,11 @@ POS can either be an integer or cons cell represent line number and columns."
 
 (defun ivy-file-preview--exit ()
   "Execution before minibuffer exits."
+  (ivy-file-preview--cancel-revert)  ; If already empty, revert it.
   (delete-dups ivy-file-preview--preview-files)
   (dolist (fn ivy-file-preview--preview-files)
     (unless (string= ivy-file-preview--selected-file fn)
       (kill-buffer (f-filename fn))))
-  (ivy-file-preview--cancel-revert)  ; If already empty, revert it.
   (setq ivy-file-preview--selected-file "")
   (setq ivy-file-preview--preview-files '()))
 
