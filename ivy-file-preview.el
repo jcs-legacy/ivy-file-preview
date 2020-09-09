@@ -7,7 +7,7 @@
 ;; Description: Preview the current ivy file selection.
 ;; Keyword: file ivy swiper preview select selection
 ;; Version: 0.1.5
-;; Package-Requires: ((emacs "25.1") (ivy "0.8.0") (f "0.20.0"))
+;; Package-Requires: ((emacs "25.1") (ivy "0.8.0") (s "1.12.0") (f "0.20.0"))
 ;; URL: https://github.com/jcs-elpa/ivy-file-preview
 
 ;; This file is NOT part of GNU Emacs.
@@ -34,6 +34,7 @@
 
 (require 'cl-lib)
 (require 'f)
+(require 's)
 (require 'ivy)
 
 (defgroup ivy-file-preview nil
@@ -52,6 +53,11 @@
   :type 'boolean
   :group 'ivy-file-preview)
 
+(defcustom ivy-file-preview-overlay-p t
+  "Show overlays while previewing."
+  :type 'boolean
+  :group 'ivy-file-preview)
+
 (defvar ivy-file-preview--preview-files '()
   "Files that are previewing, and will be closed after action is done.")
 
@@ -60,6 +66,9 @@
 
 (defvar ivy-file-preview--window-status '()
   "Record windows status for when canceling command.")
+
+(defvar ivy-file-preview--overlays '()
+  "List of overlays.")
 
 ;;; Util
 
@@ -72,11 +81,68 @@
   (goto-char (point-min))
   (forward-line (1- ln)))
 
+(defun ivy-file-preview--convert-pos (ln col)
+  "Convert LN and COL to position point."
+  (save-excursion
+    (ivy-file-preview--goto-line ln)
+    (move-to-column col)
+    (point)))
+
+(defun ivy-file-preview--make-overlay (beg end)
+  "Make a new overlay with BEG and END."
+  (let ((ol (make-overlay beg end)))
+    (overlay-put ol 'face (if (= beg (point)) 'ivy-current-match 'ivy-minibuffer-match-highlight))
+    (overlay-put ol 'priority 0)
+    (push ol ivy-file-preview--overlays)))
+
+(defun ivy-file-preview--delete-overlays ()
+  "Delete all overlays in list."
+  (dolist (ov ivy-file-preview--overlays) (delete-overlay ov)))
+
 ;;; Core
+
+(defun ivy-file-preview--extract-candidates-overlay-data ()
+  "Extract the overlay data from current ivy candidates."
+  (let* ((project-dir (ivy-file-preview--project-path))
+         (fn (if project-dir
+                 (s-replace project-dir "" ivy-file-preview--selected-file)
+               ivy-file-preview--selected-file))
+         (cands (or ivy--old-cands ivy--all-candidates '()))
+         (cands-len (length cands)) current-cand entered ln-data
+         ln col
+         cand-fn (results '()) break (index 0))
+    (while (and (not break) (< index cands-len))
+      (setq current-cand (nth index cands))
+      (setq ln-data (split-string current-cand ":"))
+      (setq cand-fn (nth 0 ln-data))
+      (if (string= cand-fn fn)
+          (progn
+            (setq ln (nth 1 ln-data) col (nth 2 ln-data))
+            (push (list :line-number ln :column col) results)
+            (setq entered t))
+        (when entered (setq break t)))
+      (setq index (1+ index)))
+    results))
+
+(defun ivy-file-preview--make-overlays ()
+  "Make overlays through out the whole buffer."
+  (let ((ov-data (ivy-file-preview--extract-candidates-overlay-data))
+        pos ln col
+        (len (length ivy-text)))
+    (dolist (data ov-data)
+      (setq ln (plist-get data :line-number)
+            col (plist-get data :column))
+      (if (not col)
+          (setq pos ln)
+        (setq ln (string-to-number ln)
+              col (string-to-number col))
+        (setq pos (ivy-file-preview--convert-pos ln col)))
+      (ivy-file-preview--make-overlay pos (+ pos len)))))
 
 (defun ivy-file-preview--open-file (fn pos)
   "Open the file path (FN).
 POS can either be an integer or cons cell represent line number and columns."
+  (setq ivy-file-preview--selected-file fn)
   (if (file-exists-p fn) (find-file fn) (switch-to-buffer fn))
   (cond ((consp pos)
          (ivy-file-preview--goto-line (car pos))
@@ -93,7 +159,12 @@ POS can either be an integer or cons cell represent line number and columns."
       (when project-dir (setq fn (f-join project-dir fn)))
       (when (and ivy-file-preview-preview-only (not (find-buffer-visiting fn)))
         (push fn ivy-file-preview--preview-files))
-      (ivy-file-preview--open-file fn pos))))
+      (unless (string= ivy-file-preview--selected-file fn)
+        (ivy-file-preview--delete-overlays))
+      (ivy-file-preview--open-file fn pos)
+      (when ivy-file-preview-overlay-p
+        (ivy-file-preview--delete-overlays)
+        (ivy-file-preview--make-overlays)))))
 
 (defun ivy-file-preview--after-select (&rest _)
   "Execution after selection."
@@ -111,8 +182,9 @@ POS can either be an integer or cons cell represent line number and columns."
 
 (defun ivy-file-preview--cancel-revert ()
   "Revert frame status if user cancel the commands."
-  (if ivy-exit
-      (setq ivy-file-preview--selected-file "")
+  (ivy-file-preview--delete-overlays)
+  (unless ivy-exit
+    (setq ivy-file-preview--selected-file "")
     (switch-to-buffer (nth 0 ivy-file-preview--window-status))
     (set-window-point minibuffer-scroll-window (nth 1 ivy-file-preview--window-status))))
 
@@ -129,7 +201,7 @@ POS can either be an integer or cons cell represent line number and columns."
   (delete-dups ivy-file-preview--preview-files)
   (dolist (fn ivy-file-preview--preview-files)
     (unless (string= ivy-file-preview--selected-file fn)
-      (kill-buffer (f-filename fn))))
+      (ignore-errors (kill-buffer (f-filename fn)))))
   (setq ivy-file-preview--selected-file "")
   (setq ivy-file-preview--preview-files '()))
 
