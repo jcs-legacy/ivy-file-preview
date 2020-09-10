@@ -148,7 +148,7 @@ POS can either be an integer or cons cell represent line number and columns."
          (ivy-file-preview--goto-line (car pos))
          (move-to-column (cdr pos)))
         ((integerp pos) (goto-char (1+ pos)))
-        (t (error "Undefined position details: %s" pos))))
+        (t (error "Invalid position details: %s" pos))))
 
 (defun ivy-file-preview--do-preview (project-dir fn pos)
   "Do file preview execution.
