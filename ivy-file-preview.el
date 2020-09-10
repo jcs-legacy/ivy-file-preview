@@ -170,17 +170,27 @@ POS can either be an integer or cons cell represent line number and columns."
 
 (defun ivy-file-preview--after-select (&rest _)
   "Execution after selection."
-  (let* ((project-dir (ivy-file-preview--project-path))
-         (cands (or ivy--old-cands ivy--all-candidates '()))
-         (current-selection (or (nth ivy--index cands) ""))
-         (sel-lst (split-string current-selection ":"))
-         fn ln cl)
-    (when (< 2 (length sel-lst))
-      (setq fn (nth 0 sel-lst) ln (nth 1 sel-lst) cl (nth 2 sel-lst)))
-    (when (and ivy-file-preview-details ln)
-      (setq ln (string-to-number ln)
-            cl (ignore-errors (cl-parse-integer cl)))
-      (ivy-file-preview--do-preview project-dir fn (if cl (cons ln cl) ln)))))
+  (if (string-empty-p ivy-text)
+      (progn
+        (ivy-file-preview--delete-overlays)
+        (ivy-file-preview--back-to-pos))
+    (let* ((project-dir (ivy-file-preview--project-path))
+           (cands (or ivy--old-cands ivy--all-candidates '()))
+           (current-selection (or (nth ivy--index cands) ""))
+           (sel-lst (split-string current-selection ":"))
+           fn ln cl)
+      (when (< 2 (length sel-lst))
+        (setq fn (nth 0 sel-lst) ln (nth 1 sel-lst) cl (nth 2 sel-lst)))
+      (when (and ivy-file-preview-details ln)
+        (setq ln (string-to-number ln)
+              cl (ignore-errors (cl-parse-integer cl)))
+        (ivy-file-preview--do-preview project-dir fn (if cl (cons ln cl) ln))))))
+
+(defun ivy-file-preview--back-to-pos ()
+  "Back to starting position."
+  (with-selected-window minibuffer-scroll-window
+    (switch-to-buffer (nth 0 ivy-file-preview--window-status))
+    (goto-char (nth 2 ivy-file-preview--window-status))))
 
 (defun ivy-file-preview--cancel-revert ()
   "Revert frame status if user cancel the commands."
@@ -194,6 +204,7 @@ POS can either be an integer or cons cell represent line number and columns."
   "Execution after minibuffer setup."
   (setq ivy-file-preview--window-status '())
   (with-selected-window minibuffer-scroll-window
+    (push (point) ivy-file-preview--window-status)
     (push (window-point) ivy-file-preview--window-status)
     (push (buffer-name) ivy-file-preview--window-status)))
 
