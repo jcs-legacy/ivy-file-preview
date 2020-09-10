@@ -99,6 +99,11 @@
   "Delete all overlays in list."
   (dolist (ov ivy-file-preview--overlays) (delete-overlay ov)))
 
+(defun ivy-file-preview--put-window-plist (prop val)
+  "Set property list with PROP and VAL."
+  (setq ivy-file-preview--window-status
+        (plist-put ivy-file-preview--window-status prop val)))
+
 ;;; Core
 
 (defun ivy-file-preview--extract-candidates-overlay-data ()
@@ -189,24 +194,24 @@ POS can either be an integer or cons cell represent line number and columns."
 (defun ivy-file-preview--back-to-pos ()
   "Back to starting position."
   (with-selected-window minibuffer-scroll-window
-    (switch-to-buffer (nth 0 ivy-file-preview--window-status))
-    (goto-char (nth 2 ivy-file-preview--window-status))))
+    (switch-to-buffer (plist-get ivy-file-preview--window-status :file))
+    (goto-char (plist-get ivy-file-preview--window-status :position))))
 
 (defun ivy-file-preview--cancel-revert ()
   "Revert frame status if user cancel the commands."
   (ivy-file-preview--delete-overlays)
   (unless ivy-exit
     (setq ivy-file-preview--selected-file "")
-    (switch-to-buffer (nth 0 ivy-file-preview--window-status))
-    (set-window-point minibuffer-scroll-window (nth 1 ivy-file-preview--window-status))))
+    (switch-to-buffer (plist-get ivy-file-preview--window-status :file))
+    (set-window-point minibuffer-scroll-window (plist-get ivy-file-preview--window-status :window-point))))
 
 (defun ivy-file-preview--enter ()
   "Execution after minibuffer setup."
   (setq ivy-file-preview--window-status '())
   (with-selected-window minibuffer-scroll-window
-    (push (point) ivy-file-preview--window-status)
-    (push (window-point) ivy-file-preview--window-status)
-    (push (buffer-name) ivy-file-preview--window-status)))
+    (ivy-file-preview--put-window-plist :file (current-buffer))
+    (ivy-file-preview--put-window-plist :window-point (window-point))
+    (ivy-file-preview--put-window-plist :position (point))))
 
 (defun ivy-file-preview--exit ()
   "Execution before minibuffer exits."
