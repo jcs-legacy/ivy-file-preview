@@ -157,7 +157,9 @@ POS can either be an integer or cons cell represent line number and columns."
   (save-selected-window
     (with-selected-window minibuffer-scroll-window
       (when project-dir (setq fn (f-join project-dir fn)))
-      (when (and ivy-file-preview-preview-only (not (find-buffer-visiting fn)))
+      (when (and ivy-file-preview-preview-only
+                 (not (find-buffer-visiting fn))
+                 (buffer-file-name))
         (push fn ivy-file-preview--preview-files))
       (unless (string= ivy-file-preview--selected-file fn)
         (ivy-file-preview--delete-overlays))
