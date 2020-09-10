@@ -106,13 +106,21 @@
 
 ;;; Core
 
+(defun ivy-file-preview--candidates ()
+  "Return current ivy candidates."
+  (or ivy--old-cands ivy--all-candidates '()))
+
+(defun ivy-file-preview--no-candidates-p ()
+  "Return nil if there is no candidate in current ivy session."
+  (>= 0 (length (ivy-file-preview--candidates))))
+
 (defun ivy-file-preview--extract-candidates-overlay-data ()
   "Extract the overlay data from current ivy candidates."
   (let* ((project-dir (ivy-file-preview--project-path))
          (fn (if project-dir
                  (s-replace project-dir "" ivy-file-preview--selected-file)
                ivy-file-preview--selected-file))
-         (cands (or ivy--old-cands ivy--all-candidates '()))
+         (cands (ivy-file-preview--candidates))
          (cands-len (length cands)) current-cand entered ln-data
          ln col
          cand-fn (results '()) break (index 0))
@@ -175,12 +183,12 @@ POS can either be an integer or cons cell represent line number and columns."
 
 (defun ivy-file-preview--after-select (&rest _)
   "Execution after selection."
-  (if (string-empty-p ivy-text)
+  (if (or (string-empty-p ivy-text) (ivy-file-preview--no-candidates-p))
       (progn
         (ivy-file-preview--delete-overlays)
         (ivy-file-preview--back-to-pos))
     (let* ((project-dir (ivy-file-preview--project-path))
-           (cands (or ivy--old-cands ivy--all-candidates '()))
+           (cands (ivy-file-preview--candidates))
            (current-selection (or (nth ivy--index cands) ""))
            (sel-lst (split-string current-selection ":"))
            fn ln cl)
