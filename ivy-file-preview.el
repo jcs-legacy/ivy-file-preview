@@ -153,23 +153,29 @@
       (ivy-file-preview--make-overlay pos (+ pos len)))))
 
 (defun ivy-file-preview--open-file (fn pos)
-  "Open the file path (FN).
-POS can either be an integer or cons cell represent line number and columns."
-  (setq ivy-file-preview--selected-file fn)
-  (if (file-exists-p fn) (find-file fn) (switch-to-buffer fn))
-  (cond ((consp pos)
-         (ivy-file-preview--goto-line (car pos))
-         (move-to-column (cdr pos)))
-        ((integerp pos) (goto-char (1+ pos)))
-        (t (error "Invalid position details: %s" pos))))
+  "Open the file path (FN) and move to POS.
+If POS is nil then it won't moves."
+  (let ((is-fild-p t))
+    (cond ((file-exists-p fn) (find-file fn))
+          ((not ivy-file-preview-details) (setq is-fild-p nil))
+          (t (switch-to-buffer fn)))
+    (when is-fild-p
+      (setq ivy-file-preview--selected-file fn)
+      (cond ((consp pos)
+             (ivy-file-preview--goto-line (car pos))
+             (move-to-column (cdr pos)))
+            ((integerp pos) (goto-char (1+ pos)))
+            ((not pos) (goto-char (point-min)))
+            (t (error "Invalid position details: %s" pos))))))
 
-(defun ivy-file-preview--do-preview (project-dir fn pos)
+(defun ivy-file-preview--do-preview (fn pos)
   "Do file preview execution.
-FN is the file path.  PROJECT-DIR is the path of the project root directory.
-POS can either be an integer or cons cell represent line number and columns."
+FN is the file path.  POS can either be one of the following type:
+  * integer : Position in file.
+  * cons cell : Contain two integer. (line-number & column)
+  * nil : Just open it without moving the point."
   (save-selected-window
     (with-selected-window minibuffer-scroll-window
-      (when project-dir (setq fn (f-join project-dir fn)))
       (when (and ivy-file-preview-preview-only
                  (not (find-buffer-visiting fn))
                  (buffer-file-name))
@@ -177,7 +183,7 @@ POS can either be an integer or cons cell represent line number and columns."
       (unless (string= ivy-file-preview--selected-file fn)
         (ivy-file-preview--delete-overlays))
       (ivy-file-preview--open-file fn pos)
-      (when ivy-file-preview-overlay-p
+      (when (and ivy-file-preview-overlay-p ivy-file-preview-details)
         (ivy-file-preview--delete-overlays)
         (ivy-file-preview--make-overlays)))))
 
@@ -191,13 +197,14 @@ POS can either be an integer or cons cell represent line number and columns."
            (cands (ivy-file-preview--candidates))
            (current-selection (or (nth ivy--index cands) ""))
            (sel-lst (split-string current-selection ":"))
-           fn ln cl)
-      (when (< 2 (length sel-lst))
-        (setq fn (nth 0 sel-lst) ln (nth 1 sel-lst) cl (nth 2 sel-lst)))
-      (when (and ivy-file-preview-details ln)
-        (setq ln (string-to-number ln)
+           (fn (nth 0 sel-lst)) (ln (nth 1 sel-lst)) (cl (nth 2 sel-lst))
+           can-preview-p)
+      (setq can-preview-p (if ivy-file-preview-details ln t))
+      (when can-preview-p
+        (setq ln (ignore-errors (cl-parse-integer ln))
               cl (ignore-errors (cl-parse-integer cl)))
-        (ivy-file-preview--do-preview project-dir fn (if cl (cons ln cl) ln))))))
+        (when project-dir (setq fn (f-join project-dir fn)))
+        (ivy-file-preview--do-preview fn (if cl (cons ln cl) ln))))))
 
 (defun ivy-file-preview--back-to-pos ()
   "Back to starting position."
