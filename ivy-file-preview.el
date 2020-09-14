@@ -58,6 +58,11 @@
   :type 'boolean
   :group 'ivy-file-preview)
 
+(defcustom ivy-file-preview-overlay-delay-time 0.4
+  "Time to delay before display overlays."
+  :type 'float
+  :group 'ivy-file-preview)
+
 (defvar ivy-file-preview--preview-files '()
   "Files that are previewing, and will be closed after action is done.")
 
@@ -76,6 +81,9 @@
 (defvar ivy-file-preview--ivy-text ""
   "Record down the ivy text to prevent make overlay if not need to.")
 
+(defvar ivy-file-preview--overlay-timer nil
+  "Timer to make overlays in buffer.")
+
 ;;; Util
 
 (defun ivy-file-preview--project-path ()
@@ -86,6 +94,10 @@
   "Goto LN line number."
   (goto-char (point-min))
   (forward-line (1- ln)))
+
+(defun ivy-file-preview--safe-kill-timer (tmr)
+  "Kill TMR safely."
+  (when (timerp tmr) (cancel-timer tmr)))
 
 (defun ivy-file-preview--convert-pos-delta (ln col)
   "Convert LN and COL to position point."
@@ -178,6 +190,12 @@ If CURRENT-OV is non-nil it create overlay that are currently selected."
           (ivy-file-preview--make-current-overlay pos len)
         (ivy-file-preview--make-overlay pos (+ pos len))))))
 
+(defun ivy-file-preview--delay-make-overlays ()
+  "Seconds to delay display overlays."
+  (with-selected-window minibuffer-scroll-window
+    (ivy-file-preview--delete-overlays)
+    (ivy-file-preview--make-overlays)))
+
 (defun ivy-file-preview--open-file (fn pos)
   "Open the file path (FN) and move to POS.
 If POS is nil then it won't moves."
@@ -216,8 +234,10 @@ FN is the file path.  POS can either be one of the following type:
         (if (and (string= ivy-file-preview--ivy-text ivy-text)
                  ivy-file-preview--current-overlay)
             (ivy-file-preview--swap-current-overlay)
-          (ivy-file-preview--delete-overlays)
-          (ivy-file-preview--make-overlays))
+          (ivy-file-preview--safe-kill-timer ivy-file-preview--overlay-timer)
+          (setq ivy-file-preview--overlay-timer
+                (run-with-timer ivy-file-preview-overlay-delay-time nil
+                                #'ivy-file-preview--delay-make-overlays)))
         (setq ivy-file-preview--ivy-text ivy-text)))))
 
 (defun ivy-file-preview--after-select (&rest _)
