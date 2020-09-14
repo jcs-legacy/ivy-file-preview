@@ -189,7 +189,8 @@ FN is the file path.  POS can either be one of the following type:
 
 (defun ivy-file-preview--after-select (&rest _)
   "Execution after selection."
-  (if (or (string-empty-p ivy-text) (ivy-file-preview--no-candidates-p))
+  (if (and ivy-file-preview-details
+           (or (string-empty-p ivy-text) (ivy-file-preview--no-candidates-p)))
       (progn
         (ivy-file-preview--delete-overlays)
         (ivy-file-preview--back-to-pos))
