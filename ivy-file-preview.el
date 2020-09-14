@@ -202,7 +202,8 @@ If POS is nil then it won't moves."
   (let ((is-fild-p t))
     (cond ((file-exists-p fn) (find-file fn))
           ((not ivy-file-preview-details) (setq is-fild-p nil))
-          (t (switch-to-buffer fn)))
+          ((find-buffer-visiting fn) (switch-to-buffer fn))
+          (t (setq is-fild-p nil)))
     (when is-fild-p
       (setq ivy-file-preview--selected-file fn)
       (cond ((consp pos)
@@ -213,7 +214,8 @@ If POS is nil then it won't moves."
              (goto-char (1+ pos))
              (recenter))
             ((not pos) (goto-char (point-min)))
-            (t (error "Invalid position details: %s" pos))))))
+            (t (error "Invalid position details: %s" pos))))
+    is-fild-p))
 
 (defun ivy-file-preview--do-preview (fn pos)
   "Do file preview execution.
@@ -223,22 +225,23 @@ FN is the file path.  POS can either be one of the following type:
   * nil : Just open it without moving the point."
   (save-selected-window
     (with-selected-window minibuffer-scroll-window
-      (when (and ivy-file-preview-preview-only
-                 (not (find-buffer-visiting fn))
-                 (buffer-file-name))
-        (push fn ivy-file-preview--preview-files))
-      (unless (string= ivy-file-preview--selected-file fn)
-        (ivy-file-preview--delete-overlays))
-      (ivy-file-preview--open-file fn pos)
-      (when (and ivy-file-preview-overlay-p ivy-file-preview-details)
-        (if (and (string= ivy-file-preview--ivy-text ivy-text)
-                 ivy-file-preview--current-overlay)
-            (ivy-file-preview--swap-current-overlay)
-          (ivy-file-preview--safe-kill-timer ivy-file-preview--overlay-timer)
-          (setq ivy-file-preview--overlay-timer
-                (run-with-timer ivy-file-preview-overlay-delay-time nil
-                                #'ivy-file-preview--delay-make-overlays)))
-        (setq ivy-file-preview--ivy-text ivy-text)))))
+      (let (valid-file-p)
+        (when (and ivy-file-preview-preview-only
+                   (not (find-buffer-visiting fn))
+                   (buffer-file-name))
+          (push fn ivy-file-preview--preview-files))
+        (unless (string= ivy-file-preview--selected-file fn)
+          (ivy-file-preview--delete-overlays))
+        (setq valid-file-p (ivy-file-preview--open-file fn pos))
+        (when (and ivy-file-preview-overlay-p ivy-file-preview-details valid-file-p)
+          (if (and (string= ivy-file-preview--ivy-text ivy-text)
+                   ivy-file-preview--current-overlay)
+              (ivy-file-preview--swap-current-overlay)
+            (ivy-file-preview--safe-kill-timer ivy-file-preview--overlay-timer)
+            (setq ivy-file-preview--overlay-timer
+                  (run-with-timer ivy-file-preview-overlay-delay-time nil
+                                  #'ivy-file-preview--delay-make-overlays)))
+          (setq ivy-file-preview--ivy-text ivy-text))))))
 
 (defun ivy-file-preview--after-select (&rest _)
   "Execution after selection."
