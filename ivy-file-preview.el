@@ -67,8 +67,14 @@
 (defvar ivy-file-preview--window-status '()
   "Record windows status for when canceling command.")
 
+(defvar ivy-file-preview--current-overlay nil
+  "Record down the current selected overlay.")
+
 (defvar ivy-file-preview--overlays '()
   "List of overlays.")
+
+(defvar ivy-file-preview--ivy-text ""
+  "Record down the ivy text to prevent make overlay if not need to.")
 
 ;;; Util
 
@@ -81,23 +87,25 @@
   (goto-char (point-min))
   (forward-line (1- ln)))
 
-(defun ivy-file-preview--convert-pos (ln col)
+(defun ivy-file-preview--convert-pos-delta (ln col)
   "Convert LN and COL to position point."
   (save-excursion
-    (ivy-file-preview--goto-line ln)
-    (move-to-column col)
-    (point)))
+    (forward-line ln)
+    (+ (point) col)))
 
-(defun ivy-file-preview--make-overlay (beg end)
-  "Make a new overlay with BEG and END."
+(defun ivy-file-preview--make-overlay (beg end fc)
+  "Make a new overlay with BEG, END and face (FC)."
   (let ((ol (make-overlay beg end)))
-    (overlay-put ol 'face (if (= beg (point)) 'ivy-current-match 'ivy-minibuffer-match-highlight))
+    (overlay-put ol 'face fc)
     (overlay-put ol 'priority 0)
-    (push ol ivy-file-preview--overlays)))
+    (push ol ivy-file-preview--overlays)  ; NOTE: Eventually get managed bt list.
+    ol))
 
 (defun ivy-file-preview--delete-overlays ()
   "Delete all overlays in list."
-  (dolist (ov ivy-file-preview--overlays) (delete-overlay ov)))
+  (dolist (ov ivy-file-preview--overlays) (delete-overlay ov))
+  (setq ivy-file-preview--overlays nil)
+  (setq ivy-file-preview--current-overlay nil))
 
 (defun ivy-file-preview--put-window-plist (prop val)
   "Set property list with PROP and VAL."
@@ -137,20 +145,43 @@
       (setq index (1+ index)))
     results))
 
+(defun ivy-file-preview--make-current-overlay (&optional fc pos len)
+  "Make current selected overlay with face (FC), POS and LEN."
+  (unless pos (setq pos (point)))
+  (unless len (setq len (length ivy-text)))
+  (ivy-file-preview--make-overlay pos (+ pos len) fc))
+
+(defun ivy-file-preview--swap-current-overlay ()
+  "Delete the previous selected overlay and swap with current selected overlay."
+  (let ((beg (overlay-start ivy-file-preview--current-overlay))
+        (end (overlay-end ivy-file-preview--current-overlay)))
+    ;; Delete previous overlay.
+    (delete-overlay ivy-file-preview--current-overlay)
+    ;; Make previous selected overlay.
+    (ivy-file-preview--make-overlay beg end 'ivy-minibuffer-match-highlight)
+    ;; Make current selected overlay.
+    (setq ivy-file-preview--current-overlay
+          (ivy-file-preview--make-current-overlay 'ivy-current-match))))
+
 (defun ivy-file-preview--make-overlays ()
   "Make overlays through out the whole buffer."
   (let ((ov-data (ivy-file-preview--extract-candidates-overlay-data))
-        pos ln col
-        (len (length ivy-text)))
+        pos ln col (len (length ivy-text))
+        ov current-ov-p fc
+        (current-ln (line-number-at-pos)) delta-ln)
     (dolist (data ov-data)
       (setq ln (plist-get data :line-number)
             col (plist-get data :column))
       (if (not col)
           (setq pos ln)
-        (setq ln (string-to-number ln)
-              col (string-to-number col))
-        (setq pos (ivy-file-preview--convert-pos ln col)))
-      (ivy-file-preview--make-overlay pos (+ pos len)))))
+        (setq ln (string-to-number ln) col (string-to-number col)
+              delta-ln (- ln current-ln)
+              pos (ivy-file-preview--convert-pos-delta delta-ln col)))
+      (setq current-ov-p (= pos (point))
+            fc (if current-ov-p 'ivy-current-match 'ivy-minibuffer-match-highlight)
+            ov (ivy-file-preview--make-current-overlay fc pos len))
+      (when current-ov-p
+        (setq ivy-file-preview--current-overlay ov)))))
 
 (defun ivy-file-preview--open-file (fn pos)
   "Open the file path (FN) and move to POS.
@@ -163,8 +194,11 @@ If POS is nil then it won't moves."
       (setq ivy-file-preview--selected-file fn)
       (cond ((consp pos)
              (ivy-file-preview--goto-line (car pos))
-             (move-to-column (cdr pos)))
-            ((integerp pos) (goto-char (1+ pos)))
+             (move-to-column (cdr pos))
+             (recenter))
+            ((integerp pos)
+             (goto-char (1+ pos))
+             (recenter))
             ((not pos) (goto-char (point-min)))
             (t (error "Invalid position details: %s" pos))))))
 
@@ -184,8 +218,13 @@ FN is the file path.  POS can either be one of the following type:
         (ivy-file-preview--delete-overlays))
       (ivy-file-preview--open-file fn pos)
       (when (and ivy-file-preview-overlay-p ivy-file-preview-details)
-        (ivy-file-preview--delete-overlays)
-        (ivy-file-preview--make-overlays)))))
+        (if (and (string= ivy-file-preview--ivy-text ivy-text)
+                 ivy-file-preview--current-overlay)
+            (progn
+              (setq ivy-file-preview--ivy-text ivy-text)
+              (ivy-file-preview--swap-current-overlay))
+          (ivy-file-preview--delete-overlays)
+          (ivy-file-preview--make-overlays))))))
 
 (defun ivy-file-preview--after-select (&rest _)
   "Execution after selection."
