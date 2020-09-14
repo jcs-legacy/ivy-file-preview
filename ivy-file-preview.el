@@ -67,11 +67,11 @@
 (defvar ivy-file-preview--window-status '()
   "Record windows status for when canceling command.")
 
-(defvar ivy-file-preview--current-overlay nil
-  "Record down the current selected overlay.")
-
 (defvar ivy-file-preview--overlays '()
   "List of overlays.")
+
+(defvar ivy-file-preview--current-overlay nil
+  "Record down the current selected overlay.")
 
 (defvar ivy-file-preview--ivy-text ""
   "Record down the ivy text to prevent make overlay if not need to.")
@@ -93,13 +93,22 @@
     (forward-line ln)
     (+ (point) col)))
 
-(defun ivy-file-preview--make-overlay (beg end fc)
-  "Make a new overlay with BEG, END and face (FC)."
+(defun ivy-file-preview--make-overlay (beg end &optional current-ov)
+  "Make a new overlay with BEG, END and face (FC).
+If CURRENT-OV is non-nil it create overlay that are currently selected."
   (let ((ol (make-overlay beg end)))
-    (overlay-put ol 'face fc)
-    (overlay-put ol 'priority 0)
+    (overlay-put ol 'face (if (= beg (point)) 'ivy-current-match
+                            'ivy-minibuffer-match-highlight))
+    (overlay-put ol 'priority (if current-ov 100 0))
     (push ol ivy-file-preview--overlays)  ; NOTE: Eventually get managed bt list.
     ol))
+
+(defun ivy-file-preview--make-current-overlay (&optional pos len)
+  "Make current selected overlay with  POS and LEN."
+  (unless pos (setq pos (point)))
+  (unless len (setq len (length ivy-text)))
+  (setq ivy-file-preview--current-overlay
+        (ivy-file-preview--make-overlay pos (+ pos len) t)))
 
 (defun ivy-file-preview--delete-overlays ()
   "Delete all overlays in list."
@@ -145,29 +154,16 @@
       (setq index (1+ index)))
     results))
 
-(defun ivy-file-preview--make-current-overlay (&optional fc pos len)
-  "Make current selected overlay with face (FC), POS and LEN."
-  (unless pos (setq pos (point)))
-  (unless len (setq len (length ivy-text)))
-  (ivy-file-preview--make-overlay pos (+ pos len) fc))
-
 (defun ivy-file-preview--swap-current-overlay ()
   "Delete the previous selected overlay and swap with current selected overlay."
-  (let ((beg (overlay-start ivy-file-preview--current-overlay))
-        (end (overlay-end ivy-file-preview--current-overlay)))
-    ;; Delete previous overlay.
-    (delete-overlay ivy-file-preview--current-overlay)
-    ;; Make previous selected overlay.
-    (ivy-file-preview--make-overlay beg end 'ivy-minibuffer-match-highlight)
-    ;; Make current selected overlay.
-    (setq ivy-file-preview--current-overlay
-          (ivy-file-preview--make-current-overlay 'ivy-current-match))))
+  (let ((pos (point)) (len (length ivy-text)))
+    (move-overlay ivy-file-preview--current-overlay pos (+ pos len))))
 
 (defun ivy-file-preview--make-overlays ()
   "Make overlays through out the whole buffer."
   (let ((ov-data (ivy-file-preview--extract-candidates-overlay-data))
         pos ln col (len (length ivy-text))
-        ov current-ov-p fc
+        current-ov-p
         (current-ln (line-number-at-pos)) delta-ln)
     (dolist (data ov-data)
       (setq ln (plist-get data :line-number)
@@ -177,11 +173,10 @@
         (setq ln (string-to-number ln) col (string-to-number col)
               delta-ln (- ln current-ln)
               pos (ivy-file-preview--convert-pos-delta delta-ln col)))
-      (setq current-ov-p (= pos (point))
-            fc (if current-ov-p 'ivy-current-match 'ivy-minibuffer-match-highlight)
-            ov (ivy-file-preview--make-current-overlay fc pos len))
-      (when current-ov-p
-        (setq ivy-file-preview--current-overlay ov)))))
+      (setq current-ov-p (= pos (point)))
+      (if current-ov-p
+          (ivy-file-preview--make-current-overlay pos len)
+        (ivy-file-preview--make-overlay pos (+ pos len))))))
 
 (defun ivy-file-preview--open-file (fn pos)
   "Open the file path (FN) and move to POS.
@@ -220,11 +215,10 @@ FN is the file path.  POS can either be one of the following type:
       (when (and ivy-file-preview-overlay-p ivy-file-preview-details)
         (if (and (string= ivy-file-preview--ivy-text ivy-text)
                  ivy-file-preview--current-overlay)
-            (progn
-              (setq ivy-file-preview--ivy-text ivy-text)
-              (ivy-file-preview--swap-current-overlay))
+            (ivy-file-preview--swap-current-overlay)
           (ivy-file-preview--delete-overlays)
-          (ivy-file-preview--make-overlays))))))
+          (ivy-file-preview--make-overlays))
+        (setq ivy-file-preview--ivy-text ivy-text)))))
 
 (defun ivy-file-preview--after-select (&rest _)
   "Execution after selection."
@@ -254,7 +248,6 @@ FN is the file path.  POS can either be one of the following type:
 
 (defun ivy-file-preview--cancel-revert ()
   "Revert frame status if user cancel the commands."
-  (ivy-file-preview--delete-overlays)
   (unless ivy-exit
     (setq ivy-file-preview--selected-file "")
     (switch-to-buffer (plist-get ivy-file-preview--window-status :file))
@@ -270,12 +263,14 @@ FN is the file path.  POS can either be one of the following type:
 
 (defun ivy-file-preview--exit ()
   "Execution before minibuffer exits."
-  (ivy-file-preview--cancel-revert)  ; If already empty, revert it.
+  (ivy-file-preview--cancel-revert)
+  (ivy-file-preview--delete-overlays)
   (delete-dups ivy-file-preview--preview-files)
   (dolist (fn ivy-file-preview--preview-files)
     (unless (string= ivy-file-preview--selected-file fn)
       (ignore-errors (kill-buffer (f-filename fn)))))
   (setq ivy-file-preview--selected-file "")
+  (setq ivy-file-preview--ivy-text "")
   (setq ivy-file-preview--preview-files '()))
 
 ;;; Entry
