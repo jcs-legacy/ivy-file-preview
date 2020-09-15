@@ -259,7 +259,9 @@ FN is the file path.  POS can either be one of the following type:
       (when can-preview-p
         (setq ln (ignore-errors (cl-parse-integer ln))
               cl (ignore-errors (cl-parse-integer cl)))
-        (when project-dir (setq fn (f-join project-dir fn)))
+        (cond ((and (string-match-p "/" fn) project-dir)
+               (setq fn (f-join project-dir fn)))
+              (t (setq fn (f-join default-directory fn))))
         (ivy-file-preview--do-preview fn (if cl (cons ln cl) ln))))))
 
 (defun ivy-file-preview--back-to-pos ()
