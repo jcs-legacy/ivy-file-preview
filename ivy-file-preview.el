@@ -209,10 +209,11 @@ If CURRENT-OV is non-nil it create overlay that are currently selected."
 (defun ivy-file-preview--open-file (fn pos)
   "Open the file path (FN) and move to POS.
 If POS is nil then it won't moves."
-  (let ((is-fild-p t))
+  (let ((is-fild-p t) (just-fn (f-filename fn)))
     (cond ((file-exists-p fn) (find-file fn))
           ((not ivy-file-preview-details) (setq is-fild-p nil))
-          ((find-buffer-visiting fn) (switch-to-buffer fn))
+          ((or (find-buffer-visiting fn) (get-buffer just-fn))
+           (switch-to-buffer just-fn))
           (t (setq is-fild-p nil)))
     (if (not is-fild-p)
         (setq ivy-file-preview--selected-file "")
