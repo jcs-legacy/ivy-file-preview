@@ -137,6 +137,7 @@ If CURRENT-OV is non-nil it create overlay that are currently selected."
 
 (defun ivy-file-preview--delete-overlays ()
   "Delete all overlays in list."
+  (ivy-file-preview--safe-kill-timer ivy-file-preview--overlay-timer)
   (dolist (ov ivy-file-preview--overlays) (delete-overlay ov))
   (setq ivy-file-preview--overlays nil)
   (setq ivy-file-preview--current-overlay nil))
