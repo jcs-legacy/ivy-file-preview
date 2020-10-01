@@ -88,7 +88,29 @@
   "Record the current present directory.
 It could either by `project-directory' or `default-directory'")
 
+(defvar ivy-file-preview--this-command nil
+  "Record of this command when entering minibuffer.")
+
+;;; External
+
+(defvar ivy-searcher--candidates)
+
 ;;; Util
+
+(defun ivy-file-preview--match-end (&optional pos index)
+  "Get matching end by currently selected candidate.
+
+An optional argument POS is use to calculate the position that relative to the
+length of `ivy-text'.
+
+An optional argument INDEX is use to find current ivy candidate."
+  (unless pos (setq pos (point)))
+  (unless index (setq index ivy--index))
+  (cond ((memq ivy-file-preview--this-command '(ivy-searcher-search-file
+                                                ivy-searcher-search-project))
+         (or (plist-get (nth index ivy-searcher--candidates) :end)
+             (+ pos (length ivy-text))))
+        (t (+ pos (length ivy-text)))))
 
 (defun ivy-file-preview--project-path ()
   "Get current project path."
@@ -128,12 +150,12 @@ If CURRENT-OV is non-nil it create overlay that are currently selected."
     (push ol ivy-file-preview--overlays)  ; NOTE: Eventually get managed bt list.
     ol))
 
-(defun ivy-file-preview--make-current-overlay (&optional pos len)
-  "Make current selected overlay with  POS and LEN."
-  (unless pos (setq pos (point)))
-  (unless len (setq len (length ivy-text)))
+(defun ivy-file-preview--make-current-overlay (&optional beg end)
+  "Make current selected overlay with BEG and END."
+  (unless beg (setq beg (point)))
+  (unless end (setq end (+ beg (length ivy-text))))
   (setq ivy-file-preview--current-overlay
-        (ivy-file-preview--make-overlay pos (+ pos len) t)))
+        (ivy-file-preview--make-overlay beg end t)))
 
 (defun ivy-file-preview--delete-overlays ()
   "Delete all overlays in list."
@@ -179,27 +201,29 @@ If CURRENT-OV is non-nil it create overlay that are currently selected."
 
 (defun ivy-file-preview--swap-current-overlay ()
   "Delete the previous selected overlay and swap with current selected overlay."
-  (let ((pos (point)) (len (length ivy-text)))
-    (move-overlay ivy-file-preview--current-overlay pos (+ pos len))))
+  (let* ((start (point)) (end (ivy-file-preview--match-end start)))
+    (move-overlay ivy-file-preview--current-overlay start end)))
 
 (defun ivy-file-preview--make-overlays ()
   "Make overlays through out the whole buffer."
   (let ((ov-data (ivy-file-preview--extract-candidates-overlay-data))
-        pos ln col (len (length ivy-text))
+        (index 0)
+        pos end ln col
         current-ov-p
         (current-ln (line-number-at-pos)) delta-ln)
     (dolist (data ov-data)
-      (setq ln (plist-get data :line-number)
-            col (plist-get data :column))
+      (setq ln (plist-get data :line-number) col (plist-get data :column))
       (if (not col)
           (setq pos ln)
         (setq ln (string-to-number ln) col (string-to-number col)
               delta-ln (- ln current-ln)
-              pos (ivy-file-preview--convert-pos-delta delta-ln col)))
+              pos (ivy-file-preview--convert-pos-delta delta-ln col)
+              end (ivy-file-preview--match-end pos index)))
       (setq current-ov-p (= pos (point)))
-      (ivy-file-preview--make-overlay pos (+ pos len))
+      (ivy-file-preview--make-overlay pos end)
       (when current-ov-p
-        (ivy-file-preview--make-current-overlay pos len)))))
+        (ivy-file-preview--make-current-overlay pos end))
+      (setq index (1+ index)))))
 
 (defun ivy-file-preview--delay-make-overlays ()
   "Seconds to delay display overlays."
@@ -289,8 +313,9 @@ FN is the file path.  POS can either be one of the following type:
 
 (defun ivy-file-preview--enter ()
   "Execution after minibuffer setup."
-  (setq ivy-file-preview--window-status '())
-  (setq ivy-file-preview--current-dir default-directory)
+  (setq ivy-file-preview--this-command this-command
+        ivy-file-preview--window-status '()
+        ivy-file-preview--current-dir default-directory)
   (with-selected-window minibuffer-scroll-window
     (ivy-file-preview--put-window-plist :file (current-buffer))
     (ivy-file-preview--put-window-plist :window-point (window-point))
@@ -304,10 +329,11 @@ FN is the file path.  POS can either be one of the following type:
   (dolist (fn ivy-file-preview--preview-files)
     (unless (string= ivy-file-preview--selected-file fn)
       (ignore-errors (kill-buffer (f-filename fn)))))
-  (setq ivy-file-preview--selected-file "")
-  (setq ivy-file-preview--ivy-text "")
-  (setq ivy-file-preview--current-dir "")
-  (setq ivy-file-preview--preview-files '()))
+  (setq ivy-file-preview--selected-file ""
+        ivy-file-preview--ivy-text ""
+        ivy-file-preview--current-dir ""
+        ivy-file-preview--preview-files '()
+        ivy-file-preview--this-command nil))
 
 ;;; Entry
 
