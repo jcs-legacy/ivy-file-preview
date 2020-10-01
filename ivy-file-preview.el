@@ -108,8 +108,10 @@ An optional argument INDEX is use to find current ivy candidate."
   (unless index (setq index ivy--index))
   (cond ((memq ivy-file-preview--this-command '(ivy-searcher-search-file
                                                 ivy-searcher-search-project))
-         (or (plist-get (nth index ivy-searcher--candidates) :end)
-             (+ pos (length ivy-text))))
+         (let* ((cand (nth index ivy-searcher--candidates))
+                (plist-data (cdr cand))
+                (end-pt (plist-get plist-data :end)))
+           (or end-pt (+ pos (length ivy-text)))))
         (t (+ pos (length ivy-text)))))
 
 (defun ivy-file-preview--project-path ()
@@ -197,7 +199,7 @@ If CURRENT-OV is non-nil it create overlay that are currently selected."
             (setq entered t))
         (when entered (setq break t)))
       (setq index (1+ index)))
-    results))
+    (reverse results)))
 
 (defun ivy-file-preview--swap-current-overlay ()
   "Delete the previous selected overlay and swap with current selected overlay."
