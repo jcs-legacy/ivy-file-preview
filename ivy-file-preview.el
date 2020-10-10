@@ -105,8 +105,8 @@ It could either by `project-directory' or `default-directory'")
   (memq ivy-file-preview--this-command '(ivy-searcher-search-file
                                          ivy-searcher-search-project)))
 
-(defun ivy-file-preview--filter-candidates ()
-  "Filter possible candidates for overlays."
+(defun ivy-file-preview--init-ov-data ()
+  "Initialize overlays data."
   (when (ivy-file-preview--ivy-searcher-p)
     (setq ivy-file-preview--first-cand-index
           (cl-position
@@ -204,7 +204,7 @@ If CURRENT-OV is non-nil it create overlay that are currently selected."
 
 (defun ivy-file-preview--extract-candidates-overlay-data ()
   "Extract the overlay data from current ivy candidates."
-  (ivy-file-preview--filter-candidates)
+  (ivy-file-preview--init-ov-data)
   (let* ((fn (s-replace ivy-file-preview--current-dir "" ivy-file-preview--selected-file))
          (cands (ivy-file-preview--candidates))
          (cands-len (length cands)) current-cand entered ln-data
