@@ -91,11 +91,30 @@ It could either by `project-directory' or `default-directory'")
 (defvar ivy-file-preview--this-command nil
   "Record of this command when entering minibuffer.")
 
+(defvar ivy-file-preview--first-cand-index nil
+  "Record of first candidate's index.")
+
 ;;; External
 
 (defvar ivy-searcher--candidates)
 
 ;;; Util
+
+(defun ivy-file-preview--ivy-searcher-p ()
+  "Return non-nil if current command is from `ivy-searcher'."
+  (memq ivy-file-preview--this-command '(ivy-searcher-search-file
+                                         ivy-searcher-search-project)))
+
+(defun ivy-file-preview--filter-candidates ()
+  "Filter possible candidates for overlays."
+  (when (ivy-file-preview--ivy-searcher-p)
+    (setq ivy-file-preview--first-cand-index
+          (cl-position
+           nil ivy-searcher--candidates
+           :test
+           (lambda (_key cand)
+             (pop cand)
+             (string= ivy-file-preview--selected-file (plist-get cand :file)))))))
 
 (defun ivy-file-preview--match-end (&optional pos index)
   "Get matching end by currently selected candidate.
@@ -105,9 +124,11 @@ length of `ivy-text'.
 
 An optional argument INDEX is use to find current ivy candidate."
   (unless pos (setq pos (point)))
-  (unless index (setq index ivy--index))
-  (cond ((memq ivy-file-preview--this-command '(ivy-searcher-search-file
-                                                ivy-searcher-search-project))
+  (if index
+      (when ivy-file-preview--first-cand-index
+        (setq index (+ index ivy-file-preview--first-cand-index)))
+    (setq index ivy--index))
+  (cond ((ivy-file-preview--ivy-searcher-p)
          (let* ((cand (nth index ivy-searcher--candidates))
                 (plist-data (cdr cand))
                 (end-pt (plist-get plist-data :end)))
@@ -183,15 +204,16 @@ If CURRENT-OV is non-nil it create overlay that are currently selected."
 
 (defun ivy-file-preview--extract-candidates-overlay-data ()
   "Extract the overlay data from current ivy candidates."
+  (ivy-file-preview--filter-candidates)
   (let* ((fn (s-replace ivy-file-preview--current-dir "" ivy-file-preview--selected-file))
          (cands (ivy-file-preview--candidates))
          (cands-len (length cands)) current-cand entered ln-data
          ln col
          cand-fn (results '()) break (index 0))
     (while (and (not break) (< index cands-len))
-      (setq current-cand (nth index cands))
-      (setq ln-data (split-string current-cand ":"))
-      (setq cand-fn (nth 0 ln-data))
+      (setq current-cand (nth index cands)
+            ln-data (split-string current-cand ":")
+            cand-fn (nth 0 ln-data))
       (if (string= cand-fn fn)
           (progn
             (setq ln (nth 1 ln-data) col (nth 2 ln-data))
