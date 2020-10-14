@@ -116,7 +116,8 @@ It could either by `project-directory' or `default-directory'")
   ;; Here is where I get the possible custom overlay data.
   ;;
   ;; ---
-  ;; TODO:
+  ;; TODO: These are commands that I may want to implement.
+  ;;
   ;;  - `counsel-ag'
   (cond
    ;; Ivy Searcher
