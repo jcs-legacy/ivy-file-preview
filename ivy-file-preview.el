@@ -101,7 +101,7 @@ It could either by `project-directory' or `default-directory'")
 (defvar ivy-searcher--candidates)
 
 ;;
-;; (@* "Util" )
+;; (@* "Custom" )
 ;;
 
 (defun ivy-file-preview--ivy-searcher-p ()
@@ -109,16 +109,29 @@ It could either by `project-directory' or `default-directory'")
   (memq ivy-file-preview--this-command '(ivy-searcher-search-file
                                          ivy-searcher-search-project)))
 
+;;
+;; (@* "Util" )
+;;
+
 (defun ivy-file-preview--init-ov-data ()
   "Initialize overlays data."
-  (when (ivy-file-preview--ivy-searcher-p)
+  ;; NOTE: Custom overlays data.
+  ;;
+  ;; Here is where I get the possible custom overlay data.
+  ;;
+  ;; ---
+  ;; TODO:
+  ;;  - `counsel-ag'
+  (cond
+   ;; Ivy Searcher
+   ((ivy-file-preview--ivy-searcher-p)
     (setq ivy-file-preview--first-cand-index
           (cl-position
            nil ivy-searcher--candidates
            :test
            (lambda (_key cand)
              (pop cand)
-             (string= ivy-file-preview--selected-file (plist-get cand :file)))))))
+             (string= ivy-file-preview--selected-file (plist-get cand :file))))))))
 
 (defun ivy-file-preview--match-end (&optional pos index)
   "Get matching end by currently selected candidate.
