@@ -94,11 +94,15 @@ It could either by `project-directory' or `default-directory'")
 (defvar ivy-file-preview--first-cand-index nil
   "Record of first candidate's index.")
 
-;;; External
+;;
+;; (@* "External" )
+;;
 
 (defvar ivy-searcher--candidates)
 
-;;; Util
+;;
+;; (@* "Util" )
+;;
 
 (defun ivy-file-preview--ivy-searcher-p ()
   "Return non-nil if current command is from `ivy-searcher'."
@@ -192,7 +196,9 @@ If CURRENT-OV is non-nil it create overlay that are currently selected."
   (setq ivy-file-preview--window-status
         (plist-put ivy-file-preview--window-status prop val)))
 
-;;; Core
+;;
+;; (@* "Core" )
+;;
 
 (defun ivy-file-preview--candidates ()
   "Return current ivy candidates."
@@ -359,7 +365,9 @@ FN is the file path.  POS can either be one of the following type:
         ivy-file-preview--preview-files '()
         ivy-file-preview--this-command nil))
 
-;;; Entry
+;;
+;; (@* "Entry" )
+;;
 
 (defun ivy-file-preview--enable ()
   "Enable `ivy-file-preview'."
