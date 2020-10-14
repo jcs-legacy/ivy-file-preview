@@ -109,10 +109,6 @@ It could either by `project-directory' or `default-directory'")
   (memq ivy-file-preview--this-command '(ivy-searcher-search-file
                                          ivy-searcher-search-project)))
 
-;;
-;; (@* "Util" )
-;;
-
 (defun ivy-file-preview--init-ov-data ()
   "Initialize overlays data."
   ;; NOTE: Custom overlays data.
@@ -132,6 +128,10 @@ It could either by `project-directory' or `default-directory'")
            (lambda (_key cand)
              (pop cand)
              (string= ivy-file-preview--selected-file (plist-get cand :file))))))))
+
+;;
+;; (@* "Util" )
+;;
 
 (defun ivy-file-preview--match-end (&optional pos index)
   "Get matching end by currently selected candidate.
