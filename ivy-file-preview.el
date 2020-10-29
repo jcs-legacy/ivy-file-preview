@@ -45,6 +45,8 @@
 (require 'cl-lib)
 (require 'f)
 (require 's)
+(require 'subr-x)
+
 (require 'ivy)
 
 (defgroup ivy-file-preview nil
