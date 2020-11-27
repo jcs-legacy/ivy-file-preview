@@ -200,7 +200,7 @@ If CURRENT-OV is non-nil it create overlay that are currently selected."
     (overlay-put ol 'face (if current-ov 'ivy-current-match
                             'ivy-minibuffer-match-highlight))
     (overlay-put ol 'priority (if current-ov 100 0))
-    (push ol ivy-file-preview--overlays)  ; NOTE: Eventually get managed bt list.
+    (push ol ivy-file-preview--overlays)  ; NOTE: Eventually get managed to list.
     ol))
 
 (defun ivy-file-preview--make-current-overlay (&optional beg end)
