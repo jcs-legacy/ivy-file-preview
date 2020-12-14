@@ -1,4 +1,6 @@
 [![Build Status](https://travis-ci.com/jcs-elpa/ivy-file-preview.svg?branch=master)](https://travis-ci.com/jcs-elpa/ivy-file-preview)
+[![MELPA](https://melpa.org/packages/ivy-file-preview-badge.svg)](https://melpa.org/#/ivy-file-preview)
+[![MELPA Stable](https://stable.melpa.org/packages/ivy-file-preview-badge.svg)](https://stable.melpa.org/#/ivy-file-preview)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 # ivy-file-preview
