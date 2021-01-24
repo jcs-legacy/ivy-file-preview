@@ -288,27 +288,28 @@ If CURRENT-OV is non-nil it create overlay that are currently selected."
 (defun ivy-file-preview--open-file (fn pos)
   "Open the file path (FN) and move to POS.
 If POS is nil then it won't moves."
-  (let ((is-fild-p t) (just-fn (f-filename fn)))
+  (let ((is-file-p t) (just-fn (f-filename fn)))
     (cond ((file-exists-p fn)
            (setq ivy-file-preview--selected-file fn)
            (find-file fn))
-          ((not ivy-file-preview-details) (setq is-fild-p nil))
+          ((not ivy-file-preview-details) (setq is-file-p nil))
           ((or (find-buffer-visiting fn) (get-buffer just-fn))
            (setq ivy-file-preview--selected-file just-fn)
            (switch-to-buffer just-fn))
           (t
            (setq ivy-file-preview--selected-file ""
-                 is-fild-p nil)))
-    (cond ((consp pos)
-           (ivy-file-preview--goto-line (car pos))
-           (move-to-column (cdr pos))
-           (recenter))
-          ((integerp pos)
-           (goto-char (1+ pos))
-           (recenter))
-          ((not pos) (goto-char (point-min)))
-          (t (error "Invalid position details: %s" pos)))
-    is-fild-p))
+                 is-file-p nil)))
+    (when is-file-p
+      (cond ((consp pos)
+             (ivy-file-preview--goto-line (car pos))
+             (move-to-column (cdr pos))
+             (recenter))
+            ((integerp pos)
+             (goto-char (1+ pos))
+             (recenter))
+            ((not pos) (goto-char (point-min)))
+            (t (error "Invalid position details: %s" pos))))
+    is-file-p))
 
 (defun ivy-file-preview--do-preview (fn pos)
   "Do file preview execution.
@@ -338,14 +339,15 @@ FN is the file path.  POS can either be one of the following type:
 (defun ivy-file-preview--read-selection (selection)
   "Read SELECTION and return list of data (file, line, column)."
   (let ((buf-lst (buffer-list)) buf-name buf-regex sel-lst)
-    (cl-some (lambda (buf)
-               (setq buf-name (buffer-name buf)
-                     buf-regex (format "^%s" (regexp-quote buf-name)))
-               (string-match-p buf-regex selection))
-             buf-lst)
+    (setq found
+          (cl-some (lambda (buf)
+                     (setq buf-name (buffer-name buf)
+                           buf-regex (format "^%s" (regexp-quote buf-name)))
+                     (string-match-p buf-regex selection))
+                   buf-lst))
     (setq selection (s-replace-regexp buf-regex "" selection)
           sel-lst (split-string selection ":"))
-    (list buf-name (nth 1 sel-lst) (nth 2 sel-lst))))
+    (list (if found buf-name (nth 0 sel-lst)) (nth 1 sel-lst) (nth 2 sel-lst))))
 
 (defun ivy-file-preview--after-select (&rest _)
   "Execution after selection."
