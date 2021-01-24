@@ -242,7 +242,7 @@ If CURRENT-OV is non-nil it create overlay that are currently selected."
          cand-fn (results '()) break (index 0))
     (while (and (not break) (< index cands-len))
       (setq current-cand (nth index cands)
-            ln-data (split-string current-cand ":")
+            ln-data (ivy-file-preview--read-selection current-cand)
             cand-fn (nth 0 ln-data))
       (if (string= cand-fn fn)
           (progn
