@@ -189,9 +189,7 @@ An optional argument INDEX is use to find current ivy candidate."
 
 (defun ivy-file-preview--convert-pos-delta (ln col)
   "Convert LN and COL to position point."
-  (save-excursion
-    (forward-line ln)
-    (+ (point) col)))
+  (save-excursion (forward-line ln) (+ (point) col)))
 
 (defun ivy-file-preview--make-overlay (beg end &optional current-ov)
   "Make a new overlay with BEG, END and face (FC).
@@ -291,23 +289,25 @@ If CURRENT-OV is non-nil it create overlay that are currently selected."
   "Open the file path (FN) and move to POS.
 If POS is nil then it won't moves."
   (let ((is-fild-p t) (just-fn (f-filename fn)))
-    (cond ((file-exists-p fn) (find-file fn))
+    (cond ((file-exists-p fn)
+           (setq ivy-file-preview--selected-file fn)
+           (find-file fn))
           ((not ivy-file-preview-details) (setq is-fild-p nil))
           ((or (find-buffer-visiting fn) (get-buffer just-fn))
+           (setq ivy-file-preview--selected-file just-fn)
            (switch-to-buffer just-fn))
-          (t (setq is-fild-p nil)))
-    (if (not is-fild-p)
-        (setq ivy-file-preview--selected-file "")
-      (setq ivy-file-preview--selected-file fn)
-      (cond ((consp pos)
-             (ivy-file-preview--goto-line (car pos))
-             (move-to-column (cdr pos))
-             (recenter))
-            ((integerp pos)
-             (goto-char (1+ pos))
-             (recenter))
-            ((not pos) (goto-char (point-min)))
-            (t (error "Invalid position details: %s" pos))))
+          (t
+           (setq ivy-file-preview--selected-file ""
+                 is-fild-p nil)))
+    (cond ((consp pos)
+           (ivy-file-preview--goto-line (car pos))
+           (move-to-column (cdr pos))
+           (recenter))
+          ((integerp pos)
+           (goto-char (1+ pos))
+           (recenter))
+          ((not pos) (goto-char (point-min)))
+          (t (error "Invalid position details: %s" pos)))
     is-fild-p))
 
 (defun ivy-file-preview--do-preview (fn pos)
@@ -335,6 +335,18 @@ FN is the file path.  POS can either be one of the following type:
                                 #'ivy-file-preview--delay-make-overlays)))
         (setq ivy-file-preview--ivy-text ivy-text)))))
 
+(defun ivy-file-preview--read-selection (selection)
+  "Read SELECTION and return list of data (file, line, column)."
+  (let ((buf-lst (buffer-list)) buf-name buf-regex sel-lst)
+    (cl-some (lambda (buf)
+               (setq buf-name (buffer-name buf)
+                     buf-regex (format "^%s" (regexp-quote buf-name)))
+               (string-match-p buf-regex selection))
+             buf-lst)
+    (setq selection (s-replace-regexp buf-regex "" selection)
+          sel-lst (split-string selection ":"))
+    (list buf-name (nth 1 sel-lst) (nth 2 sel-lst))))
+
 (defun ivy-file-preview--after-select (&rest _)
   "Execution after selection."
   (if (and ivy-file-preview-details
@@ -344,7 +356,7 @@ FN is the file path.  POS can either be one of the following type:
         (ivy-file-preview--back-to-pos))
     (let* ((cands (ivy-file-preview--candidates))
            (current-selection (or (nth ivy--index cands) ""))
-           (sel-lst (split-string current-selection ":"))
+           (sel-lst (ivy-file-preview--read-selection current-selection))
            (fn (nth 0 sel-lst)) (ln (nth 1 sel-lst)) (cl (nth 2 sel-lst))
            can-preview-p)
       (setq can-preview-p (if ivy-file-preview-details ln t))
