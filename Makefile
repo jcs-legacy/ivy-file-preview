@@ -3,9 +3,9 @@ SHELL := /usr/bin/env bash
 EMACS ?= emacs
 CASK ?= cask
 
-PKG-FILES := goto-line-preview.el
+PKG-FILES := ivy-file-preivew.el
 
-TEST-FILES := $(shell ls test/goto-line-preview-*.el)
+TEST-FILES := $(shell ls test/ivy-file-preivew-*.el)
 
 .PHONY: clean checkdoc lint unix-build unix-compile	unix-test
 
