@@ -1,3 +1,3 @@
 (source melpa)
 
-(package-file "ivy-file-preview.el")
+(package-file "ivy-file-preivew.el")
