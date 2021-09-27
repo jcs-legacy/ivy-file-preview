@@ -1,10 +1,11 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![MELPA](https://melpa.org/packages/ivy-file-preview-badge.svg)](https://melpa.org/#/ivy-file-preview)
 [![MELPA Stable](https://stable.melpa.org/packages/ivy-file-preview-badge.svg)](https://stable.melpa.org/#/ivy-file-preview)
-[![CI](https://github.com/jcs-elpa/ivy-file-preview/actions/workflows/test.yml/badge.svg)](https://github.com/jcs-elpa/ivy-file-preview/actions/workflows/test.yml)
 
 # ivy-file-preview
 > Preview the current ivy file selection.
+
+[![CI](https://github.com/jcs-elpa/ivy-file-preview/actions/workflows/test.yml/badge.svg)](https://github.com/jcs-elpa/ivy-file-preview/actions/workflows/test.yml)
 
 <p align="center">
   <img src="./etc/demo.gif" width="400" height="460"/>
