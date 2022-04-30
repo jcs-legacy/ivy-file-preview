@@ -1,6 +1,14 @@
-(source "melpa")
+(package "ivy-file-preview"
+         "0.4.5"
+         "Preview the current ivy file selection")
 
 (package-file "ivy-file-preview.el")
 
-(setq network-security-level 'low      ; see https://github.com/jcs090218/setup-emacs-windows/issues/156#issuecomment-932956432
-      byte-compile-error-on-warn nil)
+(source "melpa")
+
+(depends-on "emacs" "26.1")
+(depends-on "ivy")
+(depends-on "f")
+(depends-on "s")
+
+(setq network-security-level 'low)  ; see https://github.com/jcs090218/setup-emacs-windows/issues/156#issuecomment-932956432
