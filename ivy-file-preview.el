@@ -4,11 +4,10 @@
 ;; Created date 2020-09-07 23:42:35
 
 ;; Author: Shen, Jen-Chieh <jcs090218@gmail.com>
-;; Description: Preview the current ivy file selection.
-;; Keyword: file ivy swiper preview select selection
+;; URL: https://github.com/jcs-elpa/ivy-file-preview
 ;; Version: 0.4.5
 ;; Package-Requires: ((emacs "25.1") (ivy "0.8.0") (s "1.12.0") (f "0.20.0"))
-;; URL: https://github.com/jcs-elpa/ivy-file-preview
+;; Keywords: file ivy swiper preview select selection
 
 ;; This file is NOT part of GNU Emacs.
 
