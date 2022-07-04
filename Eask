@@ -3,7 +3,7 @@
          "Preview the current ivy file selection")
 
 (website-url "https://github.com/jcs-elpa/ivy-file-preview")
-(keywords "file" "ivy" "swiper" "preview" "select" "selection")
+(keywords "convenience" "file" "ivy" "swiper" "preview" "select" "selection")
 
 (package-file "ivy-file-preview.el")
 
