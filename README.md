@@ -1,6 +1,5 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![MELPA](https://melpa.org/packages/ivy-file-preview-badge.svg)](https://melpa.org/#/ivy-file-preview)
-[![MELPA Stable](https://stable.melpa.org/packages/ivy-file-preview-badge.svg)](https://stable.melpa.org/#/ivy-file-preview)
+[![JCS-ELPA](https://raw.githubusercontent.com/jcs-emacs/badges/master/elpa/v/ivy-file-preview.svg)](https://jcs-emacs.github.io/jcs-elpa/#/ivy-file-preview)
 
 # ivy-file-preview
 > Preview the current ivy file selection.
