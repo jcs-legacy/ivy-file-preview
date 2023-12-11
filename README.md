@@ -4,7 +4,7 @@
 # ivy-file-preview
 > Preview the current ivy file selection.
 
-[![CI](https://github.com/jcs-elpa/ivy-file-preview/actions/workflows/test.yml/badge.svg)](https://github.com/jcs-elpa/ivy-file-preview/actions/workflows/test.yml)
+[![CI](https://github.com/jcs-legacy/ivy-file-preview/actions/workflows/test.yml/badge.svg)](https://github.com/jcs-legacy/ivy-file-preview/actions/workflows/test.yml)
 
 <p align="center">
   <img src="./etc/demo.gif" width="400" height="460"/>
