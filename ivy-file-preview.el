@@ -1,6 +1,6 @@
 ;;; ivy-file-preview.el --- Preview the current ivy file selection  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020-2021  Shen, Jen-Chieh
+;; Copyright (C) 2020-2024  Shen, Jen-Chieh
 ;; Created date 2020-09-07 23:42:35
 
 ;; Author: Shen, Jen-Chieh <jcs090218@gmail.com>
