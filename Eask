@@ -1,3 +1,5 @@
+;; -*- mode: eask; lexical-binding: t -*-
+
 (package "ivy-file-preview"
          "0.4.5"
          "Preview the current ivy file selection")
